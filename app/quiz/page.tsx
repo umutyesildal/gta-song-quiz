@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Song, QuizQuestion, QuizResult, QuizFeedback } from "@/types";
 import { generateQuiz } from "@/utils/quiz";
 import Link from "next/link";
 import YouTubePlayer from "@/components/YouTubePlayer";
 
-export default function QuizPage() {
+// Create a component that uses useSearchParams
+function QuizContent() {
   const searchParams = useSearchParams();
   const mode = (searchParams.get("mode") as "regular" | "pro") || "regular";
 
@@ -442,5 +443,23 @@ export default function QuizPage() {
         </Link>
       </div>
     </div>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function QuizPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="gta-title text-4xl mb-4">Loading Quiz...</h2>
+            <div className="w-16 h-16 border-4 border-gta-yellow border-t-transparent rounded-full animate-spin mx-auto"></div>
+          </div>
+        </div>
+      }
+    >
+      <QuizContent />
+    </Suspense>
   );
 }
