@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: "Pricedown";
+  src: url("/fonts/pricedown.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  /* Add a fallback font in case the custom font isn't available */
+  font-display: swap;
+}
+
+body {
+  /* Add a fallback background color when the image isn't available */
+  background-color: #111;
+  background-image: url("/images/background.jpg");
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  color: white;
+}
+
+.gta-title {
+  /* Use fallback fonts if Pricedown isn't loaded */
+  font-family: "Pricedown", Impact, "Arial Black", sans-serif;
+  text-shadow: 3px 3px 0 #000;
+  letter-spacing: 1px;
+  color: #ffcc00;
+}
+
+.radio-station {
+  transition: all 0.3s ease;
+}
+
+.radio-station:hover {
+  transform: scale(1.05);
+}
+
+.quiz-answer {
+  transition: all 0.2s;
+}
+
+.quiz-answer:hover {
+  background-color: rgba(255, 204, 0, 0.2);
+}
+
+.quiz-answer.correct {
+  background-color: rgba(0, 255, 0, 0.3);
+}
+
+.quiz-answer.incorrect {
+  background-color: rgba(255, 0, 0, 0.3);
+}
