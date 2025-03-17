@@ -43,8 +43,6 @@ next-env.d.ts
 .env.test.local
 .env.production.local
 
-# Media and Data
-public/data/
 
 /data-maker
 .next
