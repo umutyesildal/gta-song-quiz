@@ -3,58 +3,30 @@ import { Song, QuizQuestion } from '@/types';
 // Generate a quiz with weighted song selection based on popularity
 export function generateQuiz(
   songs: Song[], 
-  radioStations: string[], 
+  gameNames: string[], 
   mode: 'regular' | 'pro', 
   questionCount: number = 5
 ): QuizQuestion[] {
   // Safety check for input data
-  if (!songs || songs.length === 0 || !radioStations || radioStations.length === 0) {
-    console.error("Invalid input data for quiz generation", { songs: songs?.length, radioStations: radioStations?.length });
+  if (!songs || songs.length === 0 || !gameNames || gameNames.length === 0) {
+    console.error("Invalid input data for quiz generation", { songs: songs?.length, gameNames: gameNames?.length });
     return [];
   }
 
   try {
-    // Calculate the maximum view and like counts
-    const maxViewCount = Math.max(...songs.map(song => song.yt_view_count || 0));
-    
-    // Check if we have any like counts at all
-    const hasLikes = songs.some(song => song.yt_like_count && song.yt_like_count > 0);
-    
-    // Calculate scores based on what data we have
-    const songsWithScore = songs.map(song => {
-      let combinedScore;
-      
-      // If we have likes, use combined view/like score, otherwise just use view count
-      if (hasLikes) {
-        const maxLikeCount = Math.max(...songs.map(song => song.yt_like_count || 0));
-        const alpha = 0.5;
-        const beta = 0.5;
-        combinedScore = alpha * ((song.yt_view_count || 0) / maxViewCount) + 
-                         beta * ((song.yt_like_count || 0) / maxLikeCount);
-      } else {
-        // Fall back to just using views for scoring if likes are not available
-        combinedScore = (song.yt_view_count || 0) / maxViewCount;
-      }
-      
-      return {
-        ...song,
-        combinedScore: isNaN(combinedScore) ? 0.01 : combinedScore // Always ensure a minimal score
-      };
-    });
-    
-    // Sort songs based on combined score for filtering
-    const sortedSongs = [...songsWithScore].sort((a, b) => (b.combinedScore || 0) - (a.combinedScore || 0));
+    // Sort songs by popularity score
+    const sortedSongs = [...songs].sort((a, b) => (b.popularity_score || 0) - (a.popularity_score || 0));
     
     // Select songs based on mode
     let availableSongs;
     if (mode === 'regular') {
-      // For regular mode, use the top 30% most popular songs
-      // Ensure we have at least questionCount*2 songs to choose from
-      const cutoff = Math.max(Math.floor(sortedSongs.length * 0.3), questionCount * 2);
+      // For regular mode, use the top 20% most popular songs
+      const cutoff = Math.max(Math.floor(sortedSongs.length * 0.2), questionCount * 2);
       availableSongs = sortedSongs.slice(0, cutoff);
     } else {
-      // For pro mode, use all songs but with weighted selection
-      availableSongs = sortedSongs;
+      // For pro mode, use less popular songs from top 80%
+      const cutoff = Math.floor(sortedSongs.length * 0.2);
+      availableSongs = sortedSongs.slice(cutoff);
     }
     
     console.log(`Available songs for selection: ${availableSongs.length}`);
@@ -65,23 +37,74 @@ export function generateQuiz(
       return [];
     }
 
-    // Use random selection with higher preference for popular songs
-    const selectedSongs: Song[] = [];
-    const uniqueTitles = new Set<string>();
+    // Ensure we have songs from multiple games for better quiz diversity
+    const gameMap = new Map<string, Song[]>();
     
-    // Shuffle a bit to avoid selecting only the top songs
-    const shuffled = [...availableSongs].sort(() => 0.5 - Math.random());
-    
-    // Make sure we have at least questionCount songs
-    for (const song of shuffled) {
-      const key = `${song.song_title}-${song.artist}`;
-      if (!uniqueTitles.has(key) && selectedSongs.length < questionCount) {
-        uniqueTitles.add(key);
-        selectedSongs.push(song);
+    // Group songs by game
+    availableSongs.forEach(song => {
+      if (!gameMap.has(song.full_name)) {
+        gameMap.set(song.full_name, []);
       }
-      
-      if (selectedSongs.length >= questionCount) break;
+      gameMap.get(song.full_name)?.push(song);
+    });
+    
+    // Make sure we have at least 3 different games
+    if (gameMap.size < 3) {
+      console.warn("Not enough different games in the dataset, quiz may have limited diversity");
     }
+    
+    // Select songs ensuring diversity
+    const selectedSongs: Song[] = [];
+    const selectedGameCounts = new Map<string, number>();
+    
+    // First pass - try to get one song from each game
+    for (const [gameName, gameSongs] of gameMap.entries()) {
+      if (selectedSongs.length < questionCount) {
+        // Pick a random song from this game
+        const randomIndex = Math.floor(Math.random() * gameSongs.length);
+        selectedSongs.push(gameSongs[randomIndex]);
+        selectedGameCounts.set(gameName, 1);
+      }
+    }
+    
+    // If we still need more songs, add additional from any game
+    if (selectedSongs.length < questionCount) {
+      const remainingSongs = availableSongs.filter(song => 
+        !selectedSongs.includes(song)
+      );
+      
+      // Shuffle remaining songs
+      const shuffled = [...remainingSongs].sort(() => 0.5 - Math.random());
+      
+      for (const song of shuffled) {
+        if (selectedSongs.length >= questionCount) break;
+        
+        const gameName = song.full_name;
+        const currentCount = selectedGameCounts.get(gameName) || 0;
+        
+        // Try to limit to max 2 songs per game for better variety
+        if (currentCount < 2) {
+          selectedSongs.push(song);
+          selectedGameCounts.set(gameName, currentCount + 1);
+        }
+      }
+    }
+    
+    // If we still don't have enough, just add any songs
+    if (selectedSongs.length < questionCount) {
+      const remainingSongs = availableSongs.filter(song => 
+        !selectedSongs.includes(song)
+      );
+      
+      const shuffled = [...remainingSongs].sort(() => 0.5 - Math.random());
+      
+      while (selectedSongs.length < questionCount && shuffled.length > 0) {
+        selectedSongs.push(shuffled.pop()!);
+      }
+    }
+    
+    // Shuffle the selected songs
+    selectedSongs.sort(() => 0.5 - Math.random());
     
     console.log(`Selected ${selectedSongs.length} songs for quiz`);
 
@@ -90,16 +113,16 @@ export function generateQuiz(
     
     // For each song, create a question with multiple choice options
     for (const song of selectedSongs) {
-      // Get all stations except the correct one
-      const otherStations = radioStations.filter(station => station !== song.radio_station);
+      // Get all game names except the correct one
+      const otherGames = gameNames.filter(game => game !== song.full_name);
       
-      // Choose 3 random incorrect stations
-      const randomIncorrectStations = otherStations
+      // Choose 3 random incorrect games
+      const randomIncorrectGames = otherGames
         .sort(() => 0.5 - Math.random())
         .slice(0, 3);
       
-      // Combine correct and incorrect stations
-      const options = [song.radio_station, ...randomIncorrectStations];
+      // Combine correct and incorrect games
+      const options = [song.full_name, ...randomIncorrectGames];
       
       // Shuffle options
       const shuffledOptions = options.sort(() => 0.5 - Math.random());
@@ -107,7 +130,8 @@ export function generateQuiz(
       quizQuestions.push({
         song,
         options: shuffledOptions,
-        correctAnswer: song.radio_station
+        correctAnswer: song.full_name,
+        questionType: 'game' // Add this to indicate it's a game name question
       });
     }
     

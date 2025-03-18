@@ -8,9 +8,9 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'gta-green': '#00B034',
-        'gta-blue': '#0072B1',
-        'gta-yellow': '#FABD02',
+        'gta-green': '#4caf50',
+        'gta-blue': '#1a73e8',
+        'gta-yellow': '#ffcc00',
         'gta-orange': '#F58519',
         'gta-purple': '#9349AD',
         'gta-red': '#ED1A22',
