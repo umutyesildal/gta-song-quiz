@@ -6,10 +6,10 @@ export interface Song {
   artist: string;
   yt_vid_title: string;
   yt_vid_link: string;
-  yt_page_info: string;
-  yt_view_count: number;
-  yt_pub_date: string;
-  yt_like_count: number;
+  yt_page_info?: string;
+  yt_view_count?: string | number;
+  yt_pub_date?: string;
+  yt_like_count?: string | number;
   
   // Calculated fields
   popularity_score?: number;
@@ -25,7 +25,7 @@ export interface QuizQuestion {
   song: Song;
   options: string[];
   correctAnswer: string;
-  questionType: 'game' | 'radio'; // Type of question
+  questionType?: 'game' | 'station'; // Make questionType optional or provide a default
 }
 
 export interface QuizResult {
