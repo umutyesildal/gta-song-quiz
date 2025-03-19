@@ -47,11 +47,20 @@ export async function getSongForDay(songs: Song[], dateString: string): Promise<
       const curatedData = await response.json();
       
       if (curatedData.songs && curatedData.songs.length > 0) {
+        // Use today's date instead of the specific dateString for consistency
         const today = new Date();
-        const startDate = new Date('2023-09-01'); // We'll start the cycle from this reference date
+        // Important: Changed the start date to March 19, 2025
+        const startDate = new Date('2025-03-19');
         
-        // Calculate days since our start date
-        const dayDiff = Math.floor((today.getTime() - startDate.getTime()) / (1000 * 3600 * 24));
+        // Calculate day number from today
+        const currentDate = new Date(dateString);
+        // Get the difference in days (can be negative if today is before start date)
+        const dayDiff = Math.floor((currentDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24));
+        
+        // If today is before the start date, use the first song
+        if (dayDiff < 0) {
+          return curatedData.songs[0];
+        }
         
         // First cycle: go through songs in order
         const totalSongs = curatedData.songs.length;
@@ -63,7 +72,6 @@ export async function getSongForDay(songs: Song[], dateString: string): Promise<
           return curatedData.songs[indexInCycle];
         } else {
           // Subsequent cycles - use a deterministic shuffle based on cycle number
-          // We'll use a simple hashing function to create a pseudo-random but deterministic order
           const shuffledIndex = getShuffledIndex(indexInCycle, cycleCount, totalSongs);
           return curatedData.songs[shuffledIndex];
         }
