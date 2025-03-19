@@ -47,22 +47,19 @@ function QuizContent() {
         if (
           !data.songs ||
           !Array.isArray(data.songs) ||
-          !data.radioStations ||
-          !Array.isArray(data.radioStations)
+          !data.gameNames ||
+          !Array.isArray(data.gameNames)
         ) {
           throw new Error("Invalid data format received");
         }
 
         console.log(
-          `Found ${data.songs.length} songs and ${data.radioStations.length} radio stations`
+          `Found ${data.songs.length} songs across ${data.gameNames.length} games`
         );
-
-        // Remove the file system check as it won't work in the browser
-        // Just use the data we already loaded
 
         const quizQuestions = generateQuiz(
           data.songs,
-          data.radioStations,
+          data.gameNames,
           mode,
           QUESTION_COUNT
         );
@@ -361,7 +358,7 @@ function QuizContent() {
     <div className="max-w-2xl mx-auto">
       <div className="bg-black bg-opacity-80 p-6 rounded-lg mb-6">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="gta-title text-3xl">San Andreas Radio Quiz</h2>
+          <h2 className="gta-title text-3xl">GTA Series Music Quiz</h2>
           <span className="px-3 py-1 bg-gta-yellow text-black rounded-full font-bold">
             {currentQuestionIndex + 1} / {questions.length}
           </span>
@@ -385,13 +382,16 @@ function QuizContent() {
         </div>
 
         <div className="text-center mb-6">
-          <p className="text-lg text-gray-400 mb-1">
-            Which radio station played:
-          </p>
+          <p className="text-lg text-gray-400 mb-1">Which GTA game featured:</p>
           <h3 className="text-2xl font-bold mb-1">
             &quot;{currentQuestion.song.song_title}&quot;
           </h3>
           <p className="text-xl">by {currentQuestion.song.artist}</p>
+          {currentQuestion.song.radio_station && (
+            <p className="text-sm text-gray-400 mt-2">
+              (Radio station: {currentQuestion.song.radio_station})
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 gap-3 mb-6">

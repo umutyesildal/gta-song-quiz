@@ -1,16 +1,19 @@
 export interface Song {
+  tag: string;
+  full_name: string;
   radio_station: string;
   song_title: string;
   artist: string;
   yt_vid_title: string;
   yt_vid_link: string;
-  yt_page_info: string;
-  yt_view_count: number;
-  yt_pub_date: string;
-  yt_like_count: number;
-  combinedScore?: number;
+  yt_page_info?: string;
+  yt_view_count?: string | number;
+  yt_pub_date?: string;
+  yt_like_count?: string | number;
+  
+  // Calculated fields
+  popularity_score?: number;
   views_per_year?: number;
-  rate_based_score?: number;
 }
 
 export interface QuizSettings {
@@ -22,6 +25,7 @@ export interface QuizQuestion {
   song: Song;
   options: string[];
   correctAnswer: string;
+  questionType?: 'game' | 'station'; // Make questionType optional or provide a default
 }
 
 export interface QuizResult {
@@ -42,5 +46,5 @@ export interface QuizFeedback {
   message: string;
   isCorrect: boolean;
   guessed?: string;
-  showCorrect?: boolean; // Add this property to indicate when to show the correct answer
+  showCorrect?: boolean;
 }

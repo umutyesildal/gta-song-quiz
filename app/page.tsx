@@ -1,77 +1,102 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import { useState, useEffect } from "react";
+import DailySongGame from "@/components/DailySongGame";
+import { motion } from "framer-motion";
 
 export default function Home() {
-  const [difficulty, setDifficulty] = useState<"regular" | "pro">("regular");
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<{ songs: any[]; gameNames: string[] }>({
+    songs: [],
+    gameNames: [],
+  });
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        // Try to load the curated songs first
+        let response = await fetch("/data/curated-songs.json");
+
+        // If curated songs don't exist or there's an error, fall back to the full list
+        if (!response.ok) {
+          console.log("Falling back to full songs list");
+          response = await fetch("/data/songs.json");
+        }
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch data: ${response.status}`);
+        }
+
+        const jsonData = await response.json();
+
+        if (!jsonData.songs || !jsonData.gameNames) {
+          throw new Error("Invalid data format");
+        }
+
+        setData({
+          songs: jsonData.songs,
+          gameNames: jsonData.gameNames,
+        });
+        setLoading(false);
+      } catch (error) {
+        console.error("Error loading data:", error);
+        setError(error instanceof Error ? error.message : "Unknown error");
+        setLoading(false);
+      }
+    }
+
+    loadData();
+  }, []);
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-4">
-      <div className="text-center mb-10">
-        <h1 className="gta-title text-6xl mb-6">GTA: San Andreas</h1>
-        <h2 className="gta-title text-5xl mb-10">Radio Quiz</h2>
-
-        <p className="text-xl mb-8">
-          Test your knowledge of the radio stations in Grand Theft Auto: San
-          Andreas!
-          <br />
-          Can you remember which station played your favorite songs?
+    <main className="flex min-h-screen flex-col items-center justify-center py-4 sm:py-8">
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center mb-8 sm:mb-12"
+      >
+        <h1 className="gta-title text-3xl sm:text-4xl md:text-5xl mb-4 sm:mb-6 inline-block">
+          GTA Song of the Day
+        </h1>
+        <div className="accent-line w-16 sm:w-24 mx-auto mb-4 sm:mb-6"></div>
+        <p className="text-gray-300 text-base sm:text-lg px-4">
+          Can you guess which GTA game featured today's song?
         </p>
+      </motion.div>
+
+      <div className="w-full max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl">
+        {loading ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center p-4 sm:p-8 gta-container rounded-lg"
+          >
+            <div className="w-12 h-12 border-4 border-gta-yellow border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-400">Loading today's song...</p>
+          </motion.div>
+        ) : error ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="gta-container p-4 sm:p-6 rounded-lg text-center"
+          >
+            <h2 className="gta-title text-xl sm:text-2xl mb-4">Error</h2>
+            <p className="mb-4 text-red-400">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-gta-yellow text-black rounded font-medium"
+            >
+              Try Again
+            </button>
+          </motion.div>
+        ) : (
+          <DailySongGame songs={data.songs} gameNames={data.gameNames} />
+        )}
       </div>
 
-      <div className="bg-black bg-opacity-70 p-8 rounded-lg max-w-lg w-full mb-8">
-        <h3 className="text-2xl font-bold mb-6 text-center">
-          Select Difficulty
-        </h3>
-
-        <div className="flex flex-col md:flex-row gap-4 mb-8">
-          <button
-            onClick={() => setDifficulty("regular")}
-            className={`flex-1 py-4 px-4 rounded-lg text-lg font-bold transition-all ${
-              difficulty === "regular"
-                ? "bg-gta-green text-black"
-                : "bg-zinc-700"
-            }`}
-          >
-            Regular Mode
-            <p className="text-sm font-normal mt-2">
-              Popular hits from the radio stations
-              <br />
-              Perfect if you're a casual GTA player
-            </p>
-          </button>
-
-          <button
-            onClick={() => setDifficulty("pro")}
-            className={`flex-1 py-4 px-4 rounded-lg text-lg font-bold transition-all ${
-              difficulty === "pro" ? "bg-gta-red text-black" : "bg-zinc-700"
-            }`}
-          >
-            Pro Mode
-            <p className="text-sm font-normal mt-2">
-              Deep cuts and obscure tracks
-              <br />
-              For true GTA San Andreas fans
-            </p>
-          </button>
-        </div>
-
-        <div className="mb-6 text-center">
-          <p className="text-sm text-gray-400">
-            Quiz contains 5 questions • Listen to songs after answering
-          </p>
-        </div>
-
-        <Link href={`/quiz?mode=${difficulty}`}>
-          <button className="w-full py-4 px-6 bg-gta-yellow text-black text-xl font-bold rounded-lg hover:bg-opacity-90 transition-all">
-            Start Quiz
-          </button>
-        </Link>
-      </div>
-
-      <div className="text-center text-zinc-400 text-sm">
-        <p>Created with ❤️ for GTA fans everywhere</p>
+      <div className="text-center text-zinc-500 text-xs sm:text-sm mt-8 sm:mt-12">
+        <p>Created for GTA fans everywhere</p>
       </div>
     </main>
   );
