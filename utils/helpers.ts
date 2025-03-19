@@ -1,3 +1,5 @@
+import { Song } from "@/types";
+
 /**
  * Extract YouTube video ID from a YouTube URL
  */
@@ -13,8 +15,8 @@ export function extractYouTubeId(url: string): string {
  * Get today's date as a string in YYYY-MM-DD format (for internal use)
  */
 export function getTodayString(): string {
-  const date = new Date();
-  return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
 
 /**
@@ -32,24 +34,86 @@ export function formatDateReadable(dateStr: string, includeYear = false): string
 }
 
 /**
- * Select a song based on the date
+ * Get the song for today (or any specific date) using the curated list
  */
-export function getSongForDay(songs: any[], date: string): any {
+export async function getSongForDay(songs: Song[], dateString: string): Promise<Song | null> {
   if (!songs || songs.length === 0) return null;
   
-  // Get the top 2% most popular songs
-  const topSongsCount = Math.max(Math.ceil(songs.length * 0.02), 10); // At least 10 songs
-  const topSongs = songs.slice(0, topSongsCount);
+  try {
+    // Try to fetch the curated songs list
+    const response = await fetch("/data/curated-songs.json");
+    
+    if (response.ok) {
+      const curatedData = await response.json();
+      
+      if (curatedData.songs && curatedData.songs.length > 0) {
+        const today = new Date();
+        const startDate = new Date('2023-09-01'); // We'll start the cycle from this reference date
+        
+        // Calculate days since our start date
+        const dayDiff = Math.floor((today.getTime() - startDate.getTime()) / (1000 * 3600 * 24));
+        
+        // First cycle: go through songs in order
+        const totalSongs = curatedData.songs.length;
+        const cycleCount = Math.floor(dayDiff / totalSongs);
+        const indexInCycle = dayDiff % totalSongs;
+        
+        if (cycleCount === 0) {
+          // First cycle - use sequential order
+          return curatedData.songs[indexInCycle];
+        } else {
+          // Subsequent cycles - use a deterministic shuffle based on cycle number
+          // We'll use a simple hashing function to create a pseudo-random but deterministic order
+          const shuffledIndex = getShuffledIndex(indexInCycle, cycleCount, totalSongs);
+          return curatedData.songs[shuffledIndex];
+        }
+      }
+    }
+    
+    // If curated songs aren't available or there's an error, fall back to the original method
+    console.log("Falling back to full song list method");
+  } catch (error) {
+    console.error("Error loading curated songs:", error);
+    // Fall back to original method below
+  }
   
-  console.log(`Using top ${topSongsCount} songs (${(topSongsCount/songs.length*100).toFixed(2)}% of total)`);
+  // Original fallback method using the full songs list
+  const dateValue = dateString.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const index = dateValue % songs.length;
+  return songs[index];
+}
+
+/**
+ * Get a shuffled but deterministic index for subsequent cycles
+ */
+function getShuffledIndex(index: number, cycleNumber: number, totalCount: number): number {
+  // Use the cycle number as a seed for our shuffle algorithm
+  const seed = cycleNumber * 17; // Arbitrary prime multiplier
   
-  // Convert date string to a number for seed
-  const dateParts = date.split('-');
-  const dateNum = parseInt(dateParts.join(''), 10);
+  // Apply a simple hash function that will give different but deterministic results for each cycle
+  const hashedIndex = (index * 31 + seed) % totalCount;
   
-  // Use date as seed to get consistent song for the same day
-  const index = dateNum % topSongs.length;
-  return topSongs[index];
+  return hashedIndex;
+}
+
+/**
+ * Calculate difference in days between two date strings
+ */
+function getDaysDifference(dateStart: string, dateEnd: string): number {
+  const start = new Date(dateStart);
+  const end = new Date(dateEnd);
+  const diffTime = Math.abs(end.getTime() - start.getTime());
+  return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+}
+
+/**
+ * Shuffle an array in-place using Fisher-Yates algorithm
+ */
+function shuffleArray(array: any[]): void {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
 }
 
 /**

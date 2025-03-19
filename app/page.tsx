@@ -15,7 +15,14 @@ export default function Home() {
   useEffect(() => {
     async function loadData() {
       try {
-        const response = await fetch("/data/songs.json");
+        // Try to load the curated songs first
+        let response = await fetch("/data/curated-songs.json");
+
+        // If curated songs don't exist or there's an error, fall back to the full list
+        if (!response.ok) {
+          console.log("Falling back to full songs list");
+          response = await fetch("/data/songs.json");
+        }
 
         if (!response.ok) {
           throw new Error(`Failed to fetch data: ${response.status}`);

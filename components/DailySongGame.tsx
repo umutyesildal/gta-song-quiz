@@ -35,97 +35,107 @@ const DailySongGame: React.FC<DailySongGameProps> = ({ songs, gameNames }) => {
 
   // Load today's song and check if user already played
   useEffect(() => {
-    const today = getTodayString();
-    setTodayDate(today);
+    async function loadTodaySong() {
+      const today = getTodayString();
+      setTodayDate(today);
 
-    try {
-      // Get today's song
-      const songForToday = getSongForDay(songs, today);
+      try {
+        // Get today's song using the async function
+        const songForToday = await getSongForDay(songs, today);
 
-      if (!songForToday) {
-        setGameState("error");
-        return;
-      }
+        if (!songForToday) {
+          setGameState("error");
+          return;
+        }
 
-      setTodaySong(songForToday);
+        setTodaySong(songForToday);
 
-      // Get game options - randomize them properly
-      const gameOpts = getGameOptions(gameNames, songForToday.full_name);
-      setOptions(gameOpts);
+        // Get game options - randomize them properly
+        const gameOpts = getGameOptions(gameNames, songForToday.full_name);
+        setOptions(gameOpts);
 
-      // Check if user already played today
-      const savedProgress = localStorage.getItem(`gta-song-day-${today}`);
-      if (savedProgress) {
-        try {
-          const progress = JSON.parse(savedProgress);
+        // Check if user already played today
+        const savedProgress = localStorage.getItem(`gta-song-day-${today}`);
+        if (savedProgress) {
+          try {
+            const progress = JSON.parse(savedProgress);
 
-          // Only set these values if the game was actually completed
-          if (progress.gameComplete === true) {
-            setSelectedAnswer(progress.selectedAnswer);
-            setIsCorrect(progress.isCorrect);
-            setGameState("guessed");
+            // Only set these values if the game was actually completed
+            if (progress.gameComplete === true) {
+              setSelectedAnswer(progress.selectedAnswer);
+              setIsCorrect(progress.isCorrect);
+              setGameState("guessed");
 
-            // Restore wrong guesses
-            if (progress.wrongGuesses && Array.isArray(progress.wrongGuesses)) {
-              setWrongGuesses(progress.wrongGuesses);
-            }
+              // Restore wrong guesses
+              if (
+                progress.wrongGuesses &&
+                Array.isArray(progress.wrongGuesses)
+              ) {
+                setWrongGuesses(progress.wrongGuesses);
+              }
 
-            // Also restore hint state if it was used
-            if (progress.hintUsed) {
-              setShowHint(true);
-            }
+              // Also restore hint state if it was used
+              if (progress.hintUsed) {
+                setShowHint(true);
+              }
 
-            // Restore attempt count
-            if (
-              typeof progress.attempts === "number" &&
-              progress.attempts > 0
-            ) {
-              setAttempts(progress.attempts);
+              // Restore attempt count
+              if (
+                typeof progress.attempts === "number" &&
+                progress.attempts > 0
+              ) {
+                setAttempts(progress.attempts);
+              } else {
+                setAttempts(0);
+              }
             } else {
-              setAttempts(0);
+              // User started but didn't finish
+              setGameState("playing");
+
+              // Restore partial progress like hints used or attempts
+              if (progress.hintUsed) {
+                setShowHint(true);
+              }
+
+              if (
+                typeof progress.attempts === "number" &&
+                progress.attempts > 0
+              ) {
+                setAttempts(progress.attempts);
+              } else {
+                setAttempts(0);
+              }
+
+              if (
+                progress.wrongGuesses &&
+                Array.isArray(progress.wrongGuesses)
+              ) {
+                setWrongGuesses(progress.wrongGuesses);
+              }
             }
-          } else {
-            // User started but didn't finish
+          } catch (e) {
+            console.error("Error parsing saved progress:", e);
+            // Reset to fresh state if we can't parse the saved progress
             setGameState("playing");
-
-            // Restore partial progress like hints used or attempts
-            if (progress.hintUsed) {
-              setShowHint(true);
-            }
-
-            if (
-              typeof progress.attempts === "number" &&
-              progress.attempts > 0
-            ) {
-              setAttempts(progress.attempts);
-            } else {
-              setAttempts(0);
-            }
-
-            if (progress.wrongGuesses && Array.isArray(progress.wrongGuesses)) {
-              setWrongGuesses(progress.wrongGuesses);
-            }
+            setAttempts(0);
+            setWrongGuesses([]);
+            setShowHint(false);
           }
-        } catch (e) {
-          console.error("Error parsing saved progress:", e);
-          // Reset to fresh state if we can't parse the saved progress
+        } else {
+          // Fresh game - no saved progress
           setGameState("playing");
           setAttempts(0);
           setWrongGuesses([]);
           setShowHint(false);
+          setSelectedAnswer(null);
         }
-      } else {
-        // Fresh game - no saved progress
-        setGameState("playing");
-        setAttempts(0);
-        setWrongGuesses([]);
-        setShowHint(false);
-        setSelectedAnswer(null);
+      } catch (error) {
+        console.error("Failed to setup daily song:", error);
+        setGameState("error");
       }
-    } catch (error) {
-      console.error("Failed to setup daily song:", error);
-      setGameState("error");
     }
+
+    loadTodaySong();
   }, [songs, gameNames]);
 
   // Handle game option selection
