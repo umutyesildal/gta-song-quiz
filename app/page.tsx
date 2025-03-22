@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import DailySongGame from "@/components/DailySongGame";
+import YesterdaySong from "@/components/YesterdaySong";
 import { motion } from "framer-motion";
 
 export default function Home() {
@@ -54,15 +55,18 @@ export default function Home() {
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-center mb-8 sm:mb-12"
+        className="text-center mb-6 sm:mb-8" // Reduced vertical margin
       >
-        <h1 className="gta-title text-3xl sm:text-4xl md:text-5xl mb-4 sm:mb-6 inline-block">
+        <h1 className="gta-title text-3xl sm:text-4xl md:text-5xl mb-2 sm:mb-3 inline-block">
           GTA Song of the Day
         </h1>
-        <div className="accent-line w-16 sm:w-24 mx-auto mb-4 sm:mb-6"></div>
-        <p className="text-gray-300 text-base sm:text-lg px-4">
-          Can you guess which GTA game featured today's song?
+        <div className="accent-line w-16 sm:w-24 mx-auto mb-3 sm:mb-4"></div>
+        <p className="text-gray-300 text-sm sm:text-base px-4">
+          Test your Grand Theft Auto music knowledge!
         </p>
+
+        {/* Only show yesterday's song if data is loaded */}
+        {!loading && !error && <YesterdaySong songs={data.songs} />}
       </motion.div>
 
       <div className="w-full max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl">
@@ -95,8 +99,16 @@ export default function Home() {
         )}
       </div>
 
-      <div className="text-center text-zinc-500 text-xs sm:text-sm mt-8 sm:mt-12">
-        <p>Created for GTA fans everywhere</p>
+      <div className="text-center text-zinc-500 text-xs sm:text-sm mt-6 sm:mt-8">
+        <p>
+          Created for GTA fans everywhere ·{" "}
+          <a
+            href="https://gta-song-quiz.vercel.app/"
+            className="hover:text-zinc-400"
+          >
+            gta-song-quiz.vercel.app
+          </a>
+        </p>
       </div>
     </main>
   );

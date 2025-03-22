@@ -247,19 +247,21 @@ const DailySongGame: React.FC<DailySongGameProps> = ({ songs, gameNames }) => {
     const emojiResult = isCorrect ? "🎮 ✅" : "🎮 ❌";
     const attemptsText = `(${attempts}/${MAX_ATTEMPTS} attempts)`;
     const hintText = showHint ? " 🔍" : "";
+    const websiteUrl = "https://gta-song-quiz.vercel.app/";
 
     const shareText = `GTA Song of the Day - ${formatDateReadable(
       todayDate,
       false
     )}\n\n"${todaySong.song_title}" by ${
       todaySong.artist
-    }\n\n${emojiResult} ${attemptsText}${hintText}`;
+    }\n\n${emojiResult} ${attemptsText}${hintText}\n\nPlay today's challenge: ${websiteUrl}`;
 
     if (navigator.share) {
       navigator
         .share({
           title: "GTA Song of the Day",
           text: shareText,
+          url: websiteUrl,
         })
         .catch(console.error);
     } else {
